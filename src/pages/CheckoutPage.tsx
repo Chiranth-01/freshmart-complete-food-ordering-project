@@ -1,0 +1,15 @@
+import { useState, type ChangeEvent, type FormEvent } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { useCart } from "../context/CartContext";
+import { formatPrice } from "../utils/format";
+
+export function CheckoutPage() {
+  const { items, subtotal, deliveryFee, total, clearCart } = useCart();
+  const navigate = useNavigate();
+  const [form, setForm] = useState({ name: "", phone: "", address: "", city: "Bengaluru", pin: "", note: "" });
+  const [placing, setPlacing] = useState(false);
+  if (!items.length) return <div className="container state-area"><h2>Your basket is empty.</h2><Link to="/products">Browse FreshMart</Link></div>;
+  const update = (key: keyof typeof form) => (event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => setForm({ ...form, [key]: event.target.value });
+  const submit = (event: FormEvent) => { event.preventDefault(); setPlacing(true); setTimeout(() => { clearCart(); navigate("/order-success", { state: { name: form.name, total, address: `${form.address}, ${form.city} - ${form.pin}` } }); }, 500); };
+  return <div className="container checkout-page"><Link to="/cart" className="back-link">← Back to basket</Link><div className="page-title"><div><span className="section-kicker">SAFE & SIMPLE</span><h1>Delivery details</h1></div></div><div className="checkout-layout"><form className="checkout-form" onSubmit={submit}><label>Full name<input required value={form.name} onChange={update("name")} placeholder="Enter your name" /></label><label>Mobile number<input required pattern="[0-9]{10}" value={form.phone} onChange={update("phone")} placeholder="10-digit mobile number" /></label><label>Delivery address<textarea required value={form.address} onChange={update("address")} placeholder="House number, street, area" rows={3} /></label><div className="form-row"><label>City<input required value={form.city} onChange={update("city")} /></label><label>PIN code<input required pattern="[0-9]{6}" value={form.pin} onChange={update("pin")} placeholder="6-digit PIN" /></label></div><label>Delivery instructions <span className="optional">optional</span><textarea value={form.note} onChange={update("note")} placeholder="e.g. Leave at the front desk" rows={2} /></label><button className="checkout-btn" disabled={placing}>{placing ? "Placing order…" : "Place order →"}</button></form><aside className="summary checkout-summary"><h2>FreshMart order</h2>{items.map(item => <div key={item.product.id}><span>{item.product.title} × {item.quantity}</span><strong>{formatPrice(item.product.price * (1 - item.product.discountPercentage / 100) * item.quantity)}</strong></div>)}<div><span>Subtotal</span><strong>{formatPrice(subtotal)}</strong></div><div><span>Delivery</span><strong>{deliveryFee ? formatPrice(deliveryFee) : "FREE"}</strong></div><div className="summary-total"><span>Total</span><strong>{formatPrice(total)}</strong></div><p className="secure-note">🔒 Demo checkout — no real payment is processed.</p></aside></div></div>;
+}
